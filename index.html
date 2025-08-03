@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Her-Lator: Wife/Girlfriend Translator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤫</text></svg>">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/typed.js/2.0.12/typed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #f0f4f8; --card-bg-color: #ffffff; --text-color: #102a43;
+            --primary-color: #ff69b4; --primary-dark-color: #c71585; --secondary-color: #9e9e9e;
+            --border-color: #dcdcdc; --shadow-color: rgba(0, 0, 0, 0.1); --emoji-bg: #e0e8f0;
+        }
+        .dark-mode {
+            --bg-color: #121212; --card-bg-color: #1e1e1e; --text-color: #e0e0e0;
+            --primary-color: #bb86fc; --primary-dark-color: #9e47f5; --secondary-color: #757575;
+            --border-color: #424242; --shadow-color: rgba(0, 0, 0, 0.3); --emoji-bg: #2c2c2c;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', sans-serif; background-color: var(--bg-color); color: var(--text-color);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s; padding: 1rem;
+        }
+        
+        /* --- NEW: Global Loader for UI Translation --- */
+        #global-loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #global-loader.visible { opacity: 1; pointer-events: auto; }
+        .spinner {
+            width: 60px; height: 60px; border: 5px solid var(--border-color);
+            border-top-color: var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .access-notice-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.75); display: flex;
+            justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease-in-out;
+        }
+        .access-notice-overlay.visible { opacity: 1; pointer-events: auto; }
+        .access-notice-modal {
+            background: var(--card-bg-color); color: var(--text-color); padding: 2.5rem;
+            border-radius: 15px; text-align: center; width: 90%; max-width: 450px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2); transform: scale(0.95);
+            transition: transform 0.3s ease-in-out;
+        }
+        .access-notice-overlay.visible .access-notice-modal { transform: scale(1); }
+        .notice-icon { font-size: 4rem; margin-bottom: 1rem; color: var(--primary-color); }
+        .notice-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .notice-text { font-size: 1rem; margin-bottom: 2rem; color: var(--secondary-color); }
+        #confirm-access-btn { width: 100%; }
+        
+        /* Other styles are mostly unchanged */
+        .main-container { background-color: var(--card-bg-color); border-radius: 20px; box-shadow: 0 10px 30px var(--shadow-color); padding: 2rem; width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 1.5rem; transition: background-color 0.3s; border: 1px solid var(--border-color); }
+        .header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .title { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); transition: color 0.3s; }
+        .toggles { display: flex; gap: 1rem; align-items: center; }
+        .language-switcher, .dark-mode-toggle { background: var(--bg-color); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: 8px; color: var(--text-color); cursor: pointer; font-size: 0.9rem; font-family: 'Poppins', sans-serif; }
+        .language-switcher { -webkit-appearance: none; -moz-appearance: none; appearance: none; padding-right: 2rem; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 16px 12px; }
+        .dark-mode .language-switcher { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23e0e0e0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e"); }
+        .avatar-section { text-align: center; }
+        .avatar { font-size: 5rem; background-color: var(--emoji-bg); border-radius: 50%; width: 120px; height: 120px; display: inline-flex; justify-content: center; align-items: center; transition: background-color 0.3s; }
+        .output-container { background-color: var(--bg-color); border-radius: 12px; padding: 1.5rem; min-height: 100px; border: 1px dashed var(--border-color); display: flex; align-items: center; justify-content: center; }
+        .translation-output { font-size: 1.1rem; font-weight: 600; color: var(--primary-color); text-align: center; }
+        .typed-cursor { color: var(--primary-color); opacity: 1; animation: typedjsBlink 0.7s infinite; }
+        @keyframes typedjsBlink { 50% { opacity: 0.0; } }
+        .input-phrase { width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color); font-family: 'Poppins', sans-serif; font-size: 1rem; background-color: var(--bg-color); color: var(--text-color); resize: vertical; min-height: 80px; }
+        .input-phrase:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 25%, transparent); }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .tone-selector { width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); font-size: 1rem; cursor: pointer; grid-column: 1 / -1; }
+        .btn { padding: 1rem; font-size: 1rem; font-weight: 600; border-radius: 12px; border: none; cursor: pointer; transition: transform 0.2s, background-color 0.2s; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark-color); }
+        .btn-secondary { background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); }
+        .btn[disabled] { cursor: not-allowed; background-color: var(--secondary-color); opacity: 0.7; }
+        .footer { margin-top: 1.5rem; font-size: 0.8rem; color: var(--secondary-color); text-align: center; }
+        @media (max-width: 640px) { body { padding: 0.5rem; } .main-container { padding: 1rem; } .title { font-size: 1.2rem; } .controls { grid-template-columns: 1fr; } .access-notice-modal { padding: 1.5rem; } }
+    </style>
+</head>
+<body>
+
+    <div id="global-loader"><div class="spinner"></div></div>
+
+    <div class="access-notice-overlay" id="access-notice-overlay">
+        <div class="access-notice-modal">
+            <div class="notice-icon">🚹</div>
+            <h2 class="notice-title" data-i18n-modal="notice_title">Heads Up!</h2>
+            <p class="notice-text" data-i18n-modal="notice_text">This translator is calibrated for the male brain.<br>THIS WEBSITE IS JUST FOR MEN.</p>
+            <button id="confirm-access-btn" class="btn btn-primary" data-i18n-modal="notice_btn">I Understand & Proceed</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <header class="header">
+            <h1 class="title" data-i18n="title">The Her-Lator</h1>
+            <div class="toggles">
+                <select class="language-switcher" id="language-switcher"></select>
+                <button class="dark-mode-toggle" data-i18n="toggle_dark">🌙</button>
+            </div>
+        </header>
+        <section class="avatar-section"><div class="avatar" id="avatar">😐</div></section>
+        <section class="output-container"><p id="translation-output" class="translation-output"></p></section>
+        <textarea id="input-phrase" class="input-phrase" data-i18n-placeholder="placeholder_input" rows="3"></textarea>
+        <section class="controls">
+            <select id="tone-selector" class="tone-selector">
+                <option value="sarcastic" data-i18n="tone_sarcastic">Sarcastic</option>
+                <option value="savage" data-i18n="tone_savage">Savage</option>
+                <option value="dramatic" data-i18n="tone_dramatic">Dramatic</option>
+                <option value="soft" data-i18n="tone_soft">Passive Aggressive</option>
+            </select>
+            <button id="translate-btn" class="btn btn-primary" data-i18n="btn_translate">Translate</button>
+            <button id="random-btn" class="btn btn-secondary" data-i18n="btn_random">Random Phrase</button>
+        </section>
+        <footer class="footer" data-i18n="footer">
+            Disclaimer: For entertainment purposes only. We are not responsible for any ensuing arguments.
+        </footer>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const dom = {
+            body: document.body,
+            globalLoader: document.getElementById('global-loader'),
+            accessNoticeOverlay: document.getElementById('access-notice-overlay'),
+            confirmAccessBtn: document.getElementById('confirm-access-btn'),
+            darkModeToggle: document.querySelector('.dark-mode-toggle'),
+            langSwitcher: document.getElementById('language-switcher'),
+            avatar: document.getElementById('avatar'),
+            output: document.getElementById('translation-output'),
+            input: document.getElementById('input-phrase'),
+            toneSelector: document.getElementById('tone-selector'),
+            translateBtn: document.getElementById('translate-btn'),
+            randomBtn: document.getElementById('random-btn'),
+            i18nElements: document.querySelectorAll('[data-i18n]'),
+            i18nPlaceholderElements: document.querySelectorAll('[data-i18n-placeholder]'),
+            i18nModalElements: document.querySelectorAll('[data-i18n-modal]')
+        };
+
+        const state = {
+            currentLangCode: 'en', currentLangName: 'English',
+            isDarkMode: false, isTranslating: false, typedInstance: null, alarmSynth: null,
+        };
+        
+        const languageList = [
+            { code: 'en', name: 'English' }, { code: 'es', name: 'Español' }, { code: 'fr', name: 'Français' }, { code: 'de', name: 'Deutsch' }, { code: 'it', name: 'Italiano' }, { code: 'pt', name: 'Português' }, { code: 'nl', name: 'Nederlands' }, { code: 'ru', name: 'Русский' }, { code: 'ja', name: '日本語' }, { code: 'ko', name: '한국어' }, { code: 'zh', name: '中文 (简体)' }, { code: 'hi', name: 'हिन्दी' }, { code: 'ar', name: 'العربية' }, { code: 'tr', name: 'Türkçe' }, { code: 'pl', name: 'Polski' }, { code: 'sv', name: 'Svenska' }, { code: 'id', name: 'Bahasa Indonesia' }, { code: 'vi', name: 'Tiếng Việt' }, { code: 'el', name: 'Ελληνικά' }, { code: 'he', name: 'עברית' }
+        ];
+
+        // --- NEW: Master English UI text object ---
+        const uiStringsMaster = {
+            title: "The Her-Lator", toggle_dark: "🌙", toggle_light: "☀️",
+            placeholder_input: "Enter a phrase like 'I'm fine.'...",
+            btn_translate: "Translate", btn_random: "Random Phrase",
+            tone_sarcastic: "Sarcastic", tone_savage: "Savage", tone_dramatic: "Dramatic", tone_soft: "Passive Aggressive",
+            footer: "Disclaimer: For entertainment purposes only. We are not responsible for any ensuing arguments.",
+            initial_message: "The truth will be revealed here...",
+            notice_title: "Heads Up!", notice_text: "This translator is calibrated for the male brain.\nTHIS WEBSITE IS JUST FOR MEN.",
+            notice_btn: "I Understand & Proceed",
+            phrases: ["I'm fine.","It's okay.","Do what you want.","Go ahead.","You don't have to get me anything.","I'm not mad.","We need to talk.","It's a long story.","I'll be ready in 5 minutes."]
+        };
+        
+        // --- UPDATED: Translations object now acts as a dynamic cache ---
+        const translations = {
+            en: uiStringsMaster // English is pre-loaded
+        };
+        
+        const API_KEY = "AIzaSyDQ_TeD1QcZO3PRMd6Z2ifQZUgsgx_1Pdc";
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+
+        // --- NEW: Loader functions ---
+        const showLoader = () => dom.globalLoader.classList.add('visible');
+        const hideLoader = () => dom.globalLoader.classList.remove('visible');
+        
+        // Main "Her-Lator" API call
+        async function getHerLatorTranslation() {
+            if (state.isTranslating) return;
+            const phrase = dom.input.value.trim();
+            if (!phrase) { playErrorSound(); animateAvatar('error'); dom.input.focus(); return; }
+            setTranslatingState(true); playThinkingSound(); animateAvatar('thinking');
+            const tone = dom.toneSelector.value;
+            const prompt = `You are 'The Her-Lator', a witty AI. Your goal is to reveal the hidden, emotional meaning behind a phrase from a girlfriend or wife. The translation must be humorous and adopt the specified tone. The response MUST be written in the target language. Do NOT add any preamble. Phrase to translate: "${phrase}", Desired Tone: "${tone}", Target Language: "${state.currentLangName}". Your translation:`;
+            try {
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }), });
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const data = await response.json();
+                const translatedText = data.candidates[0].content.parts[0].text.trim();
+                displayTranslation(translatedText); animateAvatar('reaction', tone); playReactionSound(tone);
+            } catch (error) {
+                console.error("Her-Lator Error:", error);
+                displayTranslation("Oops! My circuits got emotional. Please try again.");
+                animateAvatar('error'); playErrorSound();
+            } finally { setTranslatingState(false); }
+        }
+        
+        // --- NEW: Applies a given translation object to the entire UI ---
+        function applyUITranslations(uiStrings) {
+            dom.i18nElements.forEach(el => { const key = el.dataset.i18n; if (uiStrings[key]) el.textContent = key === 'toggle_dark' ? (state.isDarkMode ? uiStrings.toggle_light : uiStrings.toggle_dark) : uiStrings[key]; });
+            dom.i18nPlaceholderElements.forEach(el => { const key = el.dataset.i18nPlaceholder; if (uiStrings[key]) el.placeholder = uiStrings[key]; });
+            dom.i18nModalElements.forEach(el => { const key = el.dataset.i18nModal; if(uiStrings[key]) el.innerHTML = uiStrings[key].replace('\n', '<br>'); });
+            Array.from(dom.toneSelector.options).forEach(option => { const key = `tone_${option.value}`; if(uiStrings[key]) option.textContent = uiStrings[key]; });
+            displayTranslation(uiStrings.initial_message); dom.input.value = '';
+        }
+
+        // --- REBUILT: Main function for handling language changes ---
+        async function updateUIForLanguage() {
+            showLoader();
+            state.currentLangCode = dom.langSwitcher.value;
+            state.currentLangName = dom.langSwitcher.options[dom.langSwitcher.selectedIndex].text;
+            localStorage.setItem('herlator_lang', state.currentLangCode);
+
+            // 1. Check cache first
+            if (translations[state.currentLangCode]) {
+                applyUITranslations(translations[state.currentLangCode]);
+                hideLoader();
+                return;
+            }
+
+            // 2. If not in cache, fetch from API
+            const prompt = `You are an expert UI translator. Translate the values in the following JSON object from English to ${state.currentLangName}. Respond ONLY with the translated JSON object. Do not add any explanation or markdown formatting like \`\`\`json. Maintain the JSON structure and keys perfectly.\n\n${JSON.stringify(uiStringsMaster)}`;
+            try {
+                const response = await fetch(`${API_URL}?key=${API_KEY}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                if (!response.ok) throw new Error(`API UI Translation Error: ${response.statusText}`);
+                const data = await response.json();
+                let translatedText = data.candidates[0].content.parts[0].text;
+                
+                // Clean the response to ensure it's valid JSON
+                translatedText = translatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+                const translatedJson = JSON.parse(translatedText);
+
+                translations[state.currentLangCode] = translatedJson; // Cache the result
+                applyUITranslations(translatedJson);
+            } catch (error) {
+                console.error("UI Translation failed:", error);
+                alert(`Failed to translate UI to ${state.currentLangName}. Please try another language.`);
+                dom.langSwitcher.value = 'en'; // Revert to English on failure
+                applyUITranslations(translations.en);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // Other functions (mostly unchanged, minor tweaks for clarity)
+        function displayTranslation(text) { if (state.typedInstance) state.typedInstance.destroy(); dom.output.textContent = ''; state.typedInstance = new Typed('#translation-output', { strings: [text], typeSpeed: 40, showCursor: true, cursorChar: '▋', onComplete: (self) => { setTimeout(() => { if(self.cursor) self.cursor.style.display = 'none'; }, 2000); } }); }
+        function setTranslatingState(isTranslating) { state.isTranslating = isTranslating; dom.translateBtn.disabled = isTranslating; dom.randomBtn.disabled = isTranslating; const uiStrings = translations[state.currentLangCode] || translations.en; dom.translateBtn.textContent = isTranslating ? '...' : uiStrings.btn_translate; }
+        function loadRandomPhrase() { const phrases = (translations[state.currentLangCode] || translations.en).phrases; dom.input.value = phrases[Math.floor(Math.random() * phrases.length)]; displayTranslation((translations[state.currentLangCode] || translations.en).initial_message); animateAvatar('reset'); }
+        function animateAvatar(type, tone = '') { anime.remove(dom.avatar); let config = { targets: dom.avatar, duration: 800 }; switch(type) { case 'thinking': dom.avatar.textContent = '🤔'; Object.assign(config, { scale: [1, 1.1, 1], rotate: '1turn', duration: 1500, loop: true, easing: 'easeInOutSine' }); break; case 'reaction': let emoji = '😏'; if (tone === 'savage') emoji = '😈'; if (tone === 'dramatic') emoji = '🎭'; if (tone === 'soft') emoji = '😒'; dom.avatar.textContent = emoji; Object.assign(config, { scale: [1, 1.3, 1], rotate: [0, 10, -10, 0], easing: 'easeOutElastic(1, .8)' }); break; case 'error': dom.avatar.textContent = '😵'; Object.assign(config, { translateX: [0, -10, 10, -10, 10, 0], duration: 500, easing: 'easeInOutSine' }); break; default: dom.avatar.textContent = '😐'; Object.assign(config, { scale: 1, rotate: 0, duration: 300 }); break; } anime(config); }
+        
+        // --- UPDATED: Sound for the "alarm" and regular operations ---
+        function initializeAudio() {
+            if (Tone.context.state !== 'running') { Tone.start(); }
+            if (!state.alarmSynth) {
+                state.alarmSynth = new Tone.PulseOscillator("G5", 0.4).toDestination();
+                state.thinkingSynth = new Tone.Synth().toDestination();
+                state.reactionSynth = new Tone.Synth().toDestination();
+            }
+        }
+        function playAlarmSound() { const now = Tone.now(); state.alarmSynth.frequency.setValueAtTime("G5", now); state.alarmSynth.frequency.linearRampToValueAtTime("C5", now + 0.1); state.alarmSynth.start(now).stop(now + 0.15); }
+        function playThinkingSound() { const now = Tone.now(); state.thinkingSynth.triggerAttackRelease("C3", "16n", now); state.thinkingSynth.triggerAttackRelease("G3", "16n", now + 0.1); state.thinkingSynth.triggerAttackRelease("C4", "16n", now + 0.2); }
+        function playReactionSound(tone) { const now = Tone.now(); switch (tone) { case 'sarcastic': state.reactionSynth.triggerAttackRelease("G#4", "8n", now); state.reactionSynth.triggerAttackRelease("G4", "8n", now + 0.1); break; case 'savage': state.reactionSynth.triggerAttackRelease("C3", "8n", now); state.reactionSynth.triggerAttackRelease("C#3", "8n", now + 0.1); state.reactionSynth.triggerAttackRelease("D3", "8n", now + 0.2); break; case 'dramatic': state.reactionSynth.triggerAttackRelease("A2", "4n", now); state.reactionSynth.triggerAttackRelease("E3", "4n", now + 0.2); state.reactionSynth.triggerAttackRelease("A3", "4n", now + 0.4); break; case 'soft': state.reactionSynth.triggerAttackRelease("B4", "8n", now); state.reactionSynth.triggerAttackRelease("E5", "8n", now + 0.2); break; } }
+        function playErrorSound() { state.reactionSynth.triggerAttackRelease("F#2", "8n", Tone.now()); }
+        
+        function toggleDarkMode() { state.isDarkMode = !state.isDarkMode; dom.body.classList.toggle('dark-mode', state.isDarkMode); applyUITranslations(translations[state.currentLangCode] || translations.en); localStorage.setItem('herlator_darkMode', state.isDarkMode); }
+        
+        function init() {
+            languageList.forEach(lang => { const option = document.createElement('option'); option.value = lang.code; option.textContent = lang.name; dom.langSwitcher.appendChild(option); });
+            const savedMode = localStorage.getItem('herlator_darkMode'); if (savedMode === 'true') { state.isDarkMode = true; dom.body.classList.add('dark-mode'); }
+            const savedLang = localStorage.getItem('herlator_lang'); if (savedLang) { dom.langSwitcher.value = savedLang; }
+            
+            updateUIForLanguage(); // Initial UI setup
+            dom.accessNoticeOverlay.classList.add('visible');
+            
+            dom.confirmAccessBtn.addEventListener('click', () => {
+                initializeAudio();
+                playAlarmSound();
+                dom.accessNoticeOverlay.classList.remove('visible');
+            });
+            
+            dom.translateBtn.addEventListener('click', () => { initializeAudio(); getHerLatorTranslation(); });
+            dom.randomBtn.addEventListener('click', loadRandomPhrase);
+            dom.darkModeToggle.addEventListener('click', toggleDarkMode);
+            dom.langSwitcher.addEventListener('change', updateUIForLanguage);
+            dom.input.addEventListener('keypress', (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); dom.translateBtn.click(); } });
+        }
+        init();
+    });
+    </script>
+</body>
+</html>
